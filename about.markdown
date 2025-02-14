@@ -19,4 +19,4 @@ You can find the source code for Jekyll at GitHub:
 
 
 Our creator can be seen below:
-![Let him rise](/color_god.jpeg)
+![Let him rise](/images/color_god.jpeg)
