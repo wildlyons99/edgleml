@@ -1,0 +1,201 @@
+---
+layout: post
+title:  "This is your first warning!"
+date:   2025-02-14 00:40:27 -0500
+categories: jekyll update
+---
+
+Implementing neural networks on hardware requires a complete knowledge of their behavior given hardware restraints. The Lattice ICE40k is an FPGA with extremely limited memory, so any neural network development must proceed with an awareness of the tradeoffs between memory usage and performance. Through the lens of a binary image-classifier Perceptron, the simplest artificial neural network (ANN), the main areas of memory usage are image resolution, pixel bit depth, and weight bit depth. The performance of various Perceptron models were measured by varying these constraints.
+
+
+Introduction
+
+In the modern day, machine learning, otherwise known as deep learning or artificial intelligence, is hard to avoid. Since the release of ChatGPT-4 in 2022, the field of deep learning has exploded, and companies worldwide are scrambling to apply the successes of these huge models to nearly every field. However, the beginnings of artificial intelligence began far before the modern day, and were far humbler: the Perceptron, or McCulloch-Pitts neuron [2]. Usefully, the behavior of these primitive algorithms is relatively transparent, with an understandable basis in linear algebra that makes them easier to study than, and help demystify, their advanced counterparts.
+The Perceptron was invented in 1957 by Frank Rosenblatt at the Cornell Aeronautical Laboratory, implemented on custom hardware to perform simple image recognition [2]. Later, several Perceptron models were joined in series to produce the first ANN, which retroactively rendered the Perceptron a neuron. Neurons are named as such because they model the learning process of our brain, in which our response to the same input over time varies as we learn. Though the Perceptron is the simplest artificial neural network ever made, it still possesses enough complexity to solve classification problems. In this paper, we will study the performance of a Perceptron with binary digit recognition.
+
+Figure 1: The Perceptron Model [2]
+
+Perceptrons consist of four stages, as shown in the image above. First, a single datum (in this case, a single image) is split into many features (its pixels). Because Perceptrons are used as binary classifiers, they have just one output for a given input (1 or 0) but can take many inputs: this makes them a many-to-one type of neural algorithm (LLMs like ChatGPT, which receive and produce text, would be a many-to-many type algorithm) [1]. In the case of an image classifier, the individual pixels of the image would be considered the features.
+ In the next stage, a dot product is performed between the features and the weights of the model, which produces a scalar value. This scalar is used as input for the third stage, the activation function, which depends on the type of problem. For a binary classifier, a simple type of logistic regressor, this function can be as simple as a step function that maps negative dot products to one class, and positive dot products to another. The output of the activation function is the final stage: for a step function, this output is either a 0 or 1 which corresponds to one of the two binary classes.
+
+Figure 2: The Binary Classification Activation Function
+
+	The key to training a Perceptron involves modifying the weights of the model such that the dot product produces a negative value for one class, and a positive value for the other. This procedure is called back-propagation, in which the weights are adjusted by the gradient of the error between the real and correct output; as this error is minimized over many iterations, called epochs, the model’s weights converge, and it is considered trained [6].
+	With the basics of the Perceptron algorithm covered, we can proceed to studying how its performance varies with certain resource constraints.
+
+Resource Constraints: Resolution and Bit Depth 
+
+	Any neural model will take up a certain amount of memory and computational resources. The trend in modern models is to examine performance with uncapped resources, generating predictions based on trillions of features at extremely high precision. The Perceptron is unique in its ability to do more with less: because it consists of a single dot product, it is faster and easier to reproduce in hardware than a multilayer model. But all hardware comes with certain constraints, so it is necessary to study how resource constraints may impact a Perceptron’s performance.
+ 	In this study, a Perceptron was used to classify the digits ‘0’ and ‘1’ in the MNIST dataset. The MNIST dataset consists of thousands of 28x28 resolution handwritten digits, and is famous as a benchmark for many image recognition models. Each pixel is expressed at high-precision by a 64-bit floating point number, and the 784 features in each datum requires a Perceptron with 784 weights [4]. These areas form the major resource allocation of the model, which will be constrained and analyzed.
+	In this study, the performance of the Perceptron will be analyzed by constraining 1) the bit depth of the features, 2) the bit depth of the weights, and 3) the resolution of the image itself. 
+
+
+
+
+
+
+
+
+
+
+Figure 3: Example MNIST Data Under Constraints
+
+	The above figure demonstrates the input perspective of the three constraint cases. In the first case, the input images will be unchanged, but the bit depth of the weights themselves will vary. In the second case, the bit depth of the image has been reduced such that the image appears ‘flatter.’ And in the third case, the resolution of the image has been reduced while the bit depth is unchanged. The total size of the model can be calculated by summing the memory required to store both features and weights. By examining the performance of the model with these constraints, we can optimize size for a desired level of performance.
+
+Performance Metrics
+
+	A great deal of literature surrounds the proper metrics of performance for artificial neural networks. The output of two-group classification models is particularly sensitive; while a multiclass logistic regressor can express many classes to degrees of confidence, a binary classifier is forced into only two options. Given poorly sorted test data that is 70% ‘1’ and 30% ‘0’, a model that arbitrarily classified all input as ‘1’ would have a 70% accuracy despite failing to identify a single ‘0’ [3]. Trained models must be tested on equal frequency data, and a 50% accuracy rate must be considered complete failure.
+	Accuracy is not the final metric for a Perceptron, especially in this study. Beyond size constraints, it is useful also to consider the speed of the model, expressed as the number of multiplies. This value will be related to size by the number of features but not the bit depth. 
+	The final metric recorded will be training speed, expressed as the number of epochs required to achieve maximum accuracy. In neural training, an epoch refers to a single iteration over the entirety of the training dataset. In this case, the 8,000 MNIST ‘0’ or ‘1’ images will be iterated over in each epoch. 2,000 will be reserved for the test set. While some variations in this study may be more accurate, it is important to note that they required more intensive training. 
+	To summarize, performance in this study will be evaluated on three metrics: accuracy, speed, and training length.
+
+Results
+
+	Data was collected over several trials, varying the three constraints as mentioned in section III. 
+
+
+Resolution Compression (64 bit depth weights & features)
+Resolution
+Model Size (bytes) 
+Accuracy (%)
+Training Len. (epochs)
+Speed
+(mults)
+28x28
+6,272
+99.81851179
+
+
+3
+784
+14x14
+1,568
+99.68239564
+
+
+3
+196
+7x7
+392
+99.77313974
+
+
+4
+49
+4x4
+128
+97.09618874
+
+
+10
+16
+2x2
+32
+94.69147005
+
+
+8
+4
+
+
+
+
+Image Bit Depth Analysis (7x7 image, 8 bit weights)
+Image Bit Depth
+Image size (bytes) 
+Accuracy (%)
+Training Len. (epochs)
+Speed
+(mults)
+8
+49
+99.72776769
+13
+49
+6
+36.75
+99.59165154
+13
+49
+4
+24.5
+99.54627949
+14
+49
+2
+12.25
+99.27404718
+13
+49
+1
+6.125
+94.50998185
+20+
+49
+
+
+Weights Bit Depth Analysis (7x7 image, 8 bit image) (training data N/A)
+Weights Bit Depth
+Model size (bytes) 
+Accuracy (%)
+Speed
+(mults)
+8
+49
+99.72776769
+49
+6
+36.75
+99.72776769
+49
+4
+24.5
+99.72776769
+49
+2
+12.25
+99.09255898
+49
+1
+6.125
+89.24500907
+49
+
+
+Discussion
+
+	The data from this experiment reveals a few key characteristics about the relationship between image resolution, image bit depth, and weight bit depth. Firstly, we do not see correlation between resolution and accuracy until the images drop below 7x7. The first three resolutions all achieve +99% accuracy, despite the 7x7 case requiring a fraction of the memory or computation. The performance of the model does fall off considerably at the 4x4 and 2x2 resolutions (though 2x2 is still nearly 95% accurate!) and so 7x7 is a benchmark for an indistinguishably good model. 7x7 was chosen as the resolution to explore variations in bit depth. By varying the bit depth of the image, we see a similar nonlinear relationship where changes at high bit depth have less effect than changes at lower bit depth: this makes sense, as dropping 2 bits from 6 to 8 is less impactful than dropping half of the bits from 4 to 2. An interesting note in the graph: while the 4 bit model began less accurate than the 2 bit model (from the random initialization of weights) it converged to slightly more accurate, validating our training algorithm. Nonetheless, only 1 bit depth images were significantly less accurate, and still managing almost a 95% accuracy.
+	Varying the weights had a similar impact as varying the images, with more drastic results. Because the model is a binary classifier, modifying the weights at the higher resolutions had no effect on the accuracy, at least with our test set. Even with a 2 bit model, the prediction was 99% accurate. This suggests that preserving weight depth is more important than image depth, because it is key to classification. At 1 bit, the model falls below 90% accuracy for the only point in the study. Thus the key findings were that 7x7 resolution, 2 bit weights, and 2 bit images were all nearly indistinguishable from their higher memory counterparts.
+	Importantly, these findings do not prove that any model can exist on such low memory requirements. Indeed, binary classification with the MNIST dataset is an extremely simple problem, and achieving >90% accuracy is sometimes as easy as examining whether a single pixel is on or off. However, they do suggest that there are minimum bounds for a model, past which increases in memory are not significantly impactful. With more complicated models, it will be key to find these bounds such that memory is not wasted.
+
+Annotated Bibliography
+
+Popescu, Marius-Constantin, et al. "Multilayer perceptron and neural networks." WSEAS Transactions on Circuits and Systems 8.7 (2009): 579-588.
+
+	Popescu explores methods for improving the traditional backpropagation algorithm used in multilayer neural networks. The paper attends with great detail to the practical application and design of perceptrons, their accordant layers, and their activation functions. It explores the use of an ‘induction driver’ to improve the training process.
+	The paper provides an extensive introduction and overview of perceptrons and neural nets, invaluable to a study of any depth on these topics. It gives several examples of single and multilayer perceptron algorithms, with sections dedicated to practical considerations and implementation.
+
+J. Singh and R. Banerjee, "A Study on Single and Multi-layer Perceptron Neural Network," 2019 3rd International Conference on Computing Methodologies and Communication (ICCMC), Erode, India, 2019, pp. 35-40, doi: 10.1109/ICCMC.2019.8819775
+
+	Singh and Banerjee describe the role of perceptrons mathematically and historically as the most basic algorithmic model of artificial intelligence. From the single perceptron perspective, they explore the concepts, functionality, application, and problems with this technology.
+As a survey, the paper provides a perfect introduction to the limitations of single perceptron networks in particular, and how they should be studied and improved, particularly with regard to classification problems. The entire paper is clear and fitted with excellent diagrams.  
+
+Jain, Bharat A., and Barin N. Nag. "Performance evaluation of neural network decision models." Journal of Management Information Systems 14.2 (1997): 201-216.
+	This paper addresses two issues that must be considered when designing neural network decision models ie. classification problems. Through financial examples such as bankruptcy prediction and thrift failure, the paper explains how improper data and sample design will skew effective performance evaluation for classification algorithms, and how to find an appropriate performance metric.
+	In particular, the paper compares neural networks to classic statistical models which are well-known, drawing analogues that will assist in evaluating any binary classifier.
+
+Zhu, Wan. "Classification of MNIST handwritten digit database using neural network." Proceedings of the research school of computer science. Australian National University, Acton, ACT 2601 (2018).
+
+	Using the MNIST dataset, this paper presents a classification solution using a multilayer neural network. The data is accompanied with plots of training loss and classification accuracy, which is used as a performance metric.
+	Usefully, methods for data compression, including autoencoding, are explored to reduce network size and increase speed. These changes are recorded experimentally against the performance metric, producing a rough framework for comparing the tradeoffs of data compression and performance with neural nets.
+
+Bernico, Michael. Deep Learning Quick Reference: Useful hacks for training and optimizing deep neural networks with TensorFlow and Keras. Packt Publishing Ltd, 2018.
+
+	Mike Bernico’s book is an excellent primer on deep learning in general, with an emphasis on practical neural network design using TensorFlow (pytorch). The book combines theory with code snippets and examples to refine any pytorch user’s understanding of both the higher-level functionality of the library, and also the math underneath. 
+These two understandings are critical when both designing a network, and executing a thorough evaluation of its performance in different experimental environments.
+
+
+Draghici, Sorin. "On the capabilities of neural networks using limited precision weights." Neural networks 15.3 (2002): 395-414.
+
+	Draghici’s paper analyzes the performance of neural networks under resource constraints - namely, limiting the bit depth (integer size) of the model’s weights to a very restricted range. The paper then explores how this limited range can improve hardware implementations, by reducing storage requirements and avoiding costly floating point computation.
+	The paper concentrates on classification problems, and attempts to establish an existence result which correlates the difficulty of the classification problem to the weight range necessary to solve it. This performance metric is interesting, but leaves open the further study of accuracy, and how much accuracy is necessary to consider a classification problem ‘solved.’
